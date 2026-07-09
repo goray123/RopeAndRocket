@@ -11,12 +11,14 @@ public class PlayerMovementController : MonoBehaviour
     [SerializeField] private PlayerInput playerInput;
 
     [Header("Movement")]
-    [SerializeField, Range(0f, 30f)] private float moveSpeed = 7f;
-    [SerializeField, Range(0f, 150f)] private float groundAcceleration = 50f;
-    [SerializeField, Range(0f, 200f)] private float groundDeceleration = 60f;
-    [SerializeField, Range(0f, 100f)] private float airAcceleration = 15f;
-    [SerializeField, Range(0f, 30f)] private float jumpVelocity = 7f;
+    [SerializeField, Range(0f, 30f)] private float moveSpeed = 12f;
+    [SerializeField, Range(0f, 150f)] private float groundAcceleration = 90f;
+    [SerializeField, Range(0f, 200f)] private float groundDeceleration = 120f;
+    [SerializeField, Range(0f, 100f)] private float airAcceleration = 35f;
+    [SerializeField, Range(0f, 30f)] private float jumpVelocity = 10f;
     [SerializeField, Range(0.01f, 1f)] private float groundCheckRadius = 0.25f;
+    [SerializeField] private float gravityScaleNormal = 1f;
+    [SerializeField] private float gravityScaleFastFall = 2.8f;
 
     private Vector2 moveInput;
     private bool jumpRequested;
@@ -47,7 +49,7 @@ public class PlayerMovementController : MonoBehaviour
             rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-            rb.useGravity = true;
+            rb.useGravity = false;
             rb.mass = 1f;
         }
 
@@ -117,8 +119,18 @@ public class PlayerMovementController : MonoBehaviour
         }
 
         grounded = CheckGrounded();
+        ApplyGravity();
         ProcessMovement();
         ProcessJump();
+    }
+
+    private void ApplyGravity()
+    {
+        bool fastFallPressed = Keyboard.current != null && Keyboard.current.leftCtrlKey.isPressed;
+        float gravityMultiplier = fastFallPressed ? gravityScaleFastFall : gravityScaleNormal;
+        Vector3 velocity = rb.linearVelocity;
+        velocity.y += -9.81f * gravityMultiplier * Time.fixedDeltaTime;
+        rb.linearVelocity = velocity;
     }
 
     private void ProcessMovement()
@@ -261,5 +273,7 @@ public class PlayerMovementController : MonoBehaviour
         airAcceleration = Mathf.Clamp(airAcceleration, 0f, 100f);
         jumpVelocity = Mathf.Clamp(jumpVelocity, 0f, 30f);
         groundCheckRadius = Mathf.Clamp(groundCheckRadius, 0.01f, 1f);
+        gravityScaleNormal = Mathf.Max(0.1f, gravityScaleNormal);
+        gravityScaleFastFall = Mathf.Max(gravityScaleNormal, gravityScaleFastFall);
     }
 }
