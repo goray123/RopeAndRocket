@@ -17,9 +17,8 @@ public class RopeController : MonoBehaviour
     [Tooltip("로프 발사 속도")][SerializeField, Range(10f, 200f)] private float fireSpeed = 70f;
     [Tooltip("최대 연결 거리")][SerializeField, Range(1f, 50f)] private float maxGrappleDistance = 30f;
     [Tooltip("앵커 충돌 반경")][SerializeField, Range(0.01f, 0.5f)] private float anchorRadius = 0.08f;
-    [Tooltip("최소 로프 길이")][SerializeField, Range(0.1f, 5f)] private float minRopeLength = 0.8f;
-    [Tooltip("최대 로프 길이")][SerializeField, Range(1f, 40f)] private float maxRopeLength = 18f;
     [Tooltip("로프 길이 변경 속도")][SerializeField, Range(0.1f, 8f)] private float lengthChangeSpeed = 3f;
+    [Tooltip("스페이스바 당김 추진력")][SerializeField] private float pullImpulse = 12f;
     [Tooltip("스윙 시 모멘텀 생성 강도")][SerializeField, Range(0.1f, 20f)] private float swingAssistStrength = 5f;
     [Tooltip("접선 속도 유지 비율")][SerializeField, Range(0.1f, 1f)] private float momentumRetention = 0.98f;
     [Tooltip("반경 방향 감쇠")][SerializeField, Range(0f, 1f)] private float radialDamping = 0.15f;
@@ -40,8 +39,7 @@ public class RopeController : MonoBehaviour
     private float travelDistance;
     private float ropeLength;
     private bool grappleHeld;
-    private bool shortenHeld;
-    private bool lengthenHeld;
+    private bool pullHeld;
 
     private void Awake()
     {
@@ -125,6 +123,7 @@ public class RopeController : MonoBehaviour
         else if (state == RopeState.Connected)
         {
             UpdateRopeLength();
+            ApplyPullInput();
             PreserveMomentum();
             EnforceRopeLength();
         }
@@ -168,11 +167,7 @@ public class RopeController : MonoBehaviour
         if (context.canceled)
         {
             grappleHeld = false;
-
-            if (state == RopeState.Connected)
-            {
-                ReleaseRope();
-            }
+            ReleaseRope();
         }
     }
 
@@ -222,11 +217,6 @@ public class RopeController : MonoBehaviour
 
         anchorPosition = nextPosition;
         travelDistance += direction.magnitude;
-
-        if (travelDistance >= maxGrappleDistance)
-        {
-            ReleaseRope();
-        }
     }
 
     private void ConnectToHit(RaycastHit hit)
@@ -235,8 +225,8 @@ public class RopeController : MonoBehaviour
         anchorPosition = hit.point;
         anchorVelocity = Vector3.zero;
         ropeLength = Vector3.Distance(playerRigidbody.position, anchorPosition);
-        ropeLength = Mathf.Clamp(ropeLength, minRopeLength, maxRopeLength);
         ropeLine.enabled = true;
+        Debug.Log($"[Rope] connected to {hit.collider.name}, distance={ropeLength}");
         UpdateRopeVisual();
     }
 
@@ -254,7 +244,45 @@ public class RopeController : MonoBehaviour
         }
 
         float delta = scrollDelta > 0f ? -lengthChangeSpeed * Time.fixedDeltaTime : lengthChangeSpeed * Time.fixedDeltaTime;
-        ropeLength = Mathf.Clamp(ropeLength + delta, minRopeLength, maxRopeLength);
+        ropeLength = Mathf.Max(0.1f, ropeLength + delta);
+    }
+
+    private void ApplyPullInput()
+    {
+        bool spaceHeld = Keyboard.current != null && Keyboard.current.spaceKey.isPressed;
+        if (!spaceHeld)
+        {
+            pullHeld = false;
+            Debug.Log("[Rope] space released");
+            return;
+        }
+
+        pullHeld = true;
+        Debug.Log($"[Rope] space held, state={state}, position={playerRigidbody.position}, anchor={anchorPosition}");
+
+        if (playerInput != null)
+        {
+            InputAction jumpAction = playerInput.actions.FindAction("Jump");
+            if (jumpAction != null)
+            {
+                jumpAction.Disable();
+                Debug.Log("[Rope] jump action disabled for rope pull");
+            }
+        }
+
+        Vector3 toAnchor = anchorPosition - playerRigidbody.position;
+        float distance = toAnchor.magnitude;
+        Debug.Log($"[Rope] distance to anchor={distance}, pullImpulse={pullImpulse}");
+
+        if (distance < 0.0001f)
+        {
+            Debug.Log("[Rope] distance too small, skip pull");
+            return;
+        }
+
+        Vector3 pullDirection = toAnchor / distance;
+        playerRigidbody.AddForce(pullDirection * pullImpulse, ForceMode.Acceleration);
+        Debug.Log($"[Rope] applied force={pullDirection * pullImpulse}");
     }
 
     private void PreserveMomentum()
@@ -352,12 +380,23 @@ public class RopeController : MonoBehaviour
 
     private void ReleaseRope()
     {
+        if (playerInput != null)
+        {
+            InputAction jumpAction = playerInput.actions.FindAction("Jump");
+            if (jumpAction != null)
+            {
+                jumpAction.Enable();
+                Debug.Log("[Rope] jump action re-enabled");
+            }
+        }
+
         state = RopeState.Ready;
         anchorPosition = Vector3.zero;
         anchorVelocity = Vector3.zero;
         travelDistance = 0f;
         ropeLength = 0f;
         ropeLine.enabled = false;
+        Debug.Log("[Rope] released");
 
         if (handCube != null)
         {
@@ -435,26 +474,6 @@ public class RopeController : MonoBehaviour
     private void ResetInputState()
     {
         grappleHeld = false;
-        shortenHeld = false;
-        lengthenHeld = false;
-    }
-
-    private void OnValidate()
-    {
-        fireSpeed = Mathf.Clamp(fireSpeed, 10f, 200f);
-        maxGrappleDistance = Mathf.Clamp(maxGrappleDistance, 1f, 50f);
-        anchorRadius = Mathf.Clamp(anchorRadius, 0.01f, 0.5f);
-        minRopeLength = Mathf.Clamp(minRopeLength, 0.1f, 5f);
-        maxRopeLength = Mathf.Clamp(maxRopeLength, 1f, 40f);
-        if (minRopeLength > maxRopeLength)
-        {
-            minRopeLength = maxRopeLength;
-        }
-
-        lengthChangeSpeed = Mathf.Clamp(lengthChangeSpeed, 0.1f, 8f);
-        swingAssistStrength = Mathf.Clamp(swingAssistStrength, 0.1f, 20f);
-        momentumRetention = Mathf.Clamp(momentumRetention, 0.1f, 1f);
-        radialDamping = Mathf.Clamp(radialDamping, 0f, 1f);
-        ropeWidth = Mathf.Clamp(ropeWidth, 0.005f, 0.2f);
+        pullHeld = false;
     }
 }

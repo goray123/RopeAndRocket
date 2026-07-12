@@ -1146,15 +1146,14 @@ MonoBehaviour:
   grappleMask:
     serializedVersion: 2
     m_Bits: 64
-  anchorSpeed: 120
-  maxGrappleDistance: 100
+  fireSpeed: 70
+  maxGrappleDistance: 50
   anchorRadius: 0.1
-  spring: 120
-  damper: 20
-  maxDistanceRatio: 0.8
-  minDistanceRatio: 0.25
-  pullAcceleration: 90
-  pullStopDistance: 1.5
+  lengthChangeSpeed: 3
+  pullImpulse: 120
+  swingAssistStrength: 5
+  momentumRetention: 0.98
+  radialDamping: 0.15
   ropeWidth: 0.03
   handRotationSpeed: 14
 --- !u!120 &1304298203
