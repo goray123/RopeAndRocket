@@ -11,12 +11,12 @@ public class PlayerMovementController : MonoBehaviour
     [SerializeField] private PlayerInput playerInput;
 
     [Header("Movement")]
-    [SerializeField, Range(0f, 30f)] private float moveSpeed = 12f;
-    [SerializeField, Range(0f, 150f)] private float groundAcceleration = 90f;
-    [SerializeField, Range(0f, 200f)] private float groundDeceleration = 120f;
-    [SerializeField, Range(0f, 100f)] private float airAcceleration = 35f;
-    [SerializeField, Range(0f, 30f)] private float jumpVelocity = 10f;
-    [SerializeField, Range(0.01f, 1f)] private float groundCheckRadius = 0.25f;
+    [SerializeField] private float moveSpeed = 12f;
+    [SerializeField] private float groundAcceleration = 90f;
+    [SerializeField] private float groundDeceleration = 120f;
+    [SerializeField] private float airAcceleration = 35f;
+    [SerializeField] private float jumpVelocity = 10f;
+    [SerializeField] private float groundCheckRadius = 0.25f;
     [SerializeField] private float gravityScaleNormal = 1f;
     [SerializeField] private float gravityScaleFastFall = 2.8f;
 
@@ -30,43 +30,8 @@ public class PlayerMovementController : MonoBehaviour
 
     private void Awake()
     {
-        if (rb == null)
-        {
-            rb = GetComponent<Rigidbody>();
-        }
-
-        if (playerInput == null)
-        {
-            playerInput = GetComponent<PlayerInput>();
-        }
-
-        if (rb == null)
-        {
-            Debug.LogError($"{nameof(PlayerMovementController)} requires a Rigidbody on {name}.", this);
-        }
-        else
-        {
-            rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-            rb.interpolation = RigidbodyInterpolation.Interpolate;
-            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-            rb.useGravity = false;
-            rb.mass = 1f;
-        }
-
-        if (playerInput == null)
-        {
-            Debug.LogError($"{nameof(PlayerMovementController)} requires a PlayerInput component on {name}.", this);
-        }
-        else
-        {
-            moveAction = playerInput.actions.FindAction("Move");
-            jumpAction = playerInput.actions.FindAction("Jump");
-        }
-
-        if (groundCheck == null)
-        {
-            Debug.LogError($"{nameof(PlayerMovementController)} requires a Ground Check transform on {name}.", this);
-        }
+        moveAction = playerInput.actions.FindAction("Move");
+        jumpAction = playerInput.actions.FindAction("Jump");
     }
 
     private void OnEnable()
@@ -113,10 +78,7 @@ public class PlayerMovementController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!IsReady())
-        {
-            return;
-        }
+        if (!IsReady()) return;
 
         grounded = CheckGrounded();
         ApplyGravity();
@@ -181,10 +143,7 @@ public class PlayerMovementController : MonoBehaviour
 
     private void ProcessJump()
     {
-        if (!jumpRequested || !grounded || rb == null)
-        {
-            return;
-        }
+        if (!jumpRequested || !grounded || rb == null) return;
 
         jumpRequested = false;
         Vector3 velocity = rb.linearVelocity;
@@ -220,10 +179,7 @@ public class PlayerMovementController : MonoBehaviour
 
     private Vector3 GetMoveDirection()
     {
-        if (moveInput.sqrMagnitude <= 0.0001f)
-        {
-            return Vector3.zero;
-        }
+        if (moveInput.sqrMagnitude <= 0.0001f) return Vector3.zero;
 
         Vector3 forward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
         Vector3 right = Vector3.ProjectOnPlane(transform.right, Vector3.up).normalized;
@@ -232,20 +188,14 @@ public class PlayerMovementController : MonoBehaviour
 
     private bool CheckGrounded()
     {
-        if (groundCheck == null)
-        {
-            return false;
-        }
+        if (groundCheck == null) return false;
 
         Collider[] colliders = Physics.OverlapSphere(groundCheck.position, groundCheckRadius, groundMask, QueryTriggerInteraction.Ignore);
         foreach (Collider collider in colliders)
         {
-            if (collider == null || IsOwnCollider(collider))
-            {
-                continue;
-            }
+            if (collider == null || IsOwnCollider(collider)) continue;
 
-            return true;
+            return true; 
         }
 
         return false;
@@ -256,24 +206,9 @@ public class PlayerMovementController : MonoBehaviour
         Collider[] ownColliders = GetComponentsInChildren<Collider>();
         foreach (Collider ownCollider in ownColliders)
         {
-            if (ownCollider == collider)
-            {
-                return true;
-            }
+            if (ownCollider == collider) return true;
         }
 
         return false;
-    }
-
-    private void OnValidate()
-    {
-        moveSpeed = Mathf.Clamp(moveSpeed, 0f, 30f);
-        groundAcceleration = Mathf.Clamp(groundAcceleration, 0f, 150f);
-        groundDeceleration = Mathf.Clamp(groundDeceleration, 0f, 200f);
-        airAcceleration = Mathf.Clamp(airAcceleration, 0f, 100f);
-        jumpVelocity = Mathf.Clamp(jumpVelocity, 0f, 30f);
-        groundCheckRadius = Mathf.Clamp(groundCheckRadius, 0.01f, 1f);
-        gravityScaleNormal = Mathf.Max(0.1f, gravityScaleNormal);
-        gravityScaleFastFall = Mathf.Max(gravityScaleNormal, gravityScaleFastFall);
     }
 }

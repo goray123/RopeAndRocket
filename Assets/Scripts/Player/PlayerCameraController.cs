@@ -22,17 +22,10 @@ public class PlayerCameraController : MonoBehaviour
     {
         if (playerInput == null)
         {
-            playerInput = GetComponent<PlayerInput>();
-        }
-
-        if (playerInput == null)
-        {
             Debug.LogError($"{nameof(PlayerCameraController)} requires a PlayerInput component on {name}.", this);
         }
-        else
-        {
-            lookAction = playerInput.actions.FindAction("Look");
-        }
+        
+        lookAction = playerInput.actions.FindAction("Look");
 
         if (cameraPivot == null)
         {
