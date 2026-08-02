@@ -1,0 +1,77 @@
+# Track 0 : Momentum System
+
+> Sprint 1
+> 담당 : Player Movement
+> 상태 : Ready
+
+---
+
+# 목적
+
+플레이어에게 적용되는 모든 이동을 하나의 시스템에서 처리한다.
+
+기본 이동, 로프, 로켓 등의 시스템은 플레이어의 Rigidbody를 직접 제어하지 않는다.
+각 시스템은 자신의 이동 정보를 Momentum System에 전달하고, Momentum System이 이를 통합하여 최종적으로 Rigidbody에 적용한다.
+
+---
+
+# 역할
+
+Momentum System은 아래 역할만 담당한다.
+
+- 이동 시스템으로부터 이동 정보 수집
+- 모든 이동 정보를 통합
+- Rigidbody에 최종 속도 적용
+
+Momentum System은
+
+- 입력 처리
+- 로프 계산
+- 로켓 계산
+
+을 담당하지 않는다.
+
+---
+
+# 입력
+
+다음 시스템으로부터 이동 정보를 전달받는다.
+
+- Basic Movement
+- Rope System
+- Rocket Launcher
+
+---
+
+# 출력
+
+플레이어 Rigidbody의 최종 이동
+
+---
+
+# 구현 요구사항
+
+- Rigidbody는 Momentum System만 제어한다.
+- 다른 시스템은 Rigidbody.velocity를 직접 변경하지 않는다.
+- 이동은 FixedUpdate에서 적용한다.
+- 여러 이동이 동시에 적용될 수 있어야 한다.
+
+---
+
+# Inspector
+
+| 변수 | 설명 |
+|------|------|
+| Max Speed Cap | 최대 이동 속도 |
+| Drag | 기본 감속 |
+
+---
+
+# 완료 조건
+
+- Rigidbody를 직접 수정하는 코드가 Momentum System 외에는 존재하지 않는다.
+- 기본 이동과 함께 정상 동작한다.
+
+---
+
+# 결정 로그
