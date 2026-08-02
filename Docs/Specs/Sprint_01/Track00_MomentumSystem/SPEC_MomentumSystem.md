@@ -1,8 +1,9 @@
 # Track 0 : Momentum System
 
 > Sprint 1
+> 작성일 : 2026.08.02
 > 담당 : Player Movement
-> 상태 : Ready
+> 상태 : Finish
 
 ---
 
